@@ -14,11 +14,16 @@ license = { file = "LICENSE" }
 urls = { homepage = "https://github.com/GefMar/gefest_simple_rest_client" }
 classifiers = ["License :: OSI Approved :: MIT License"]
 
+dependencies = [
+    "requests>=2.31.0",
+    "aiohttp>=3.8.1",]
+
 [tool.flake8]
 max-line-length = 120
 inline_quotes = "double"
 format = "wemake"
 select = ["WPS"]
+max-line-complexity = 16
 
 ignore = [
     "C", "D", "F", "DAR", "RST", "Q", "I", "S",
@@ -31,4 +36,5 @@ ignore = [
 per-file-ignores = [
     "__init__.py:WPS347, WPS440",
     "*_enums.py:WPS115",
-    "tests/test_*.py:WPS202, WPS442",]
+    "*/errors/*_errors.py:WPS420,WPS604",
+    "tests/test_*.py:WPS202,WPS442",]
