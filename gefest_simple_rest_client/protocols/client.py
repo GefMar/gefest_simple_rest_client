@@ -2,8 +2,7 @@ __all__ = ("ClientProtocol",)
 
 import typing
 
-from aiohttp import ClientResponse
-from requests import Response
+from httpx import Response
 
 
 class ClientProtocol(typing.Protocol):
@@ -12,4 +11,4 @@ class ClientProtocol(typing.Protocol):
 
     def safe_request(self, method: str, url: str, **kwargs) -> Response: ...
 
-    async def safe_request_async(self, method: str, url: str, **kwargs) -> ClientResponse: ...
+    async def safe_request_async(self, method: str, url: str, **kwargs) -> Response: ...

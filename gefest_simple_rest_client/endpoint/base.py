@@ -4,8 +4,7 @@ from abc import ABC, abstractmethod
 import typing
 from urllib import parse as urlparse
 
-from aiohttp import ClientResponse
-from requests import Response
+from httpx import Response
 
 from ..protocols.client import ClientProtocol
 from .path_template import PathTemplate
@@ -42,41 +41,52 @@ class BaseEndpoint(ABC, typing.Generic[BaseClientT, PathTemplateT]):  # noqa: WP
         path = self.formated_path(path_params)
         return urlparse.urljoin(f"{base_url}/", path)
 
-    def get(self, *, path_params: PathParamsT = None, query_params: dict | None = None) -> Response:
-        return self.client.safe_request("GET", self.url(path_params), params=query_params)
-
-    async def get_async(self, *, path_params: dict | None = None, query_params: dict | None = None) -> ClientResponse:
-        return await self.client.safe_request_async("GET", self.url(path_params), params=query_params)
-
-    def post(
-        self, *, path_params: PathParamsT = None, query_params: dict | None = None, data: dict | None = None
+    def request(
+        self,
+        method: str,
+        *,
+        path_params: PathParamsT = None,
+        query_params: dict | None = None,
+        data: dict | None = None,
     ) -> Response:
-        return self.client.safe_request("POST", self.url(path_params), params=query_params, json=data)
+        return self.client.safe_request(method, self.url(path_params), params=query_params, json=data)
 
-    async def post_async(
-        self, *, path_params: PathParamsT = None, query_params: dict | None = None, data: dict | None = None
-    ) -> ClientResponse:
-        return await self.client.safe_request_async("POST", self.url(path_params), params=query_params, json=data)
-
-    def put(
-        self, *, path_params: PathParamsT = None, query_params: dict | None = None, data: dict | None = None
+    async def request_async(
+        self,
+        method: str,
+        *,
+        path_params: PathParamsT = None,
+        query_params: dict | None = None,
+        data: dict | None = None,
     ) -> Response:
-        return self.client.safe_request("PUT", self.url(path_params), params=query_params, json=data)
+        return await self.client.safe_request_async(method, self.url(path_params), params=query_params, json=data)
 
-    async def put_async(
-        self, *, path_params: PathParamsT = None, query_params: dict | None = None, data: dict | None = None
-    ) -> ClientResponse:
-        return await self.client.safe_request_async("PUT", self.url(path_params), params=query_params, json=data)
+    def get(self, **kwargs) -> Response:
+        return self.request("GET", **kwargs)
 
-    def patch(
-        self, *, path_params: PathParamsT = None, query_params: dict | None = None, data: dict | None = None
-    ) -> Response:
-        return self.client.safe_request("PATCH", self.url(path_params), params=query_params, json=data)
+    async def get_async(self, **kwargs) -> Response:
+        return await self.request_async("GET", **kwargs)
 
-    async def patch_async(
-        self, *, path_params: PathParamsT = None, query_params: dict | None = None, data: dict | None = None
-    ) -> ClientResponse:
-        return await self.client.safe_request_async("PATCH", self.url(path_params), params=query_params, json=data)
+    def post(self, **kwargs) -> Response:
+        return self.request("POST", **kwargs)
 
-    def delete(self, *, path_params: PathParamsT = None, query_params: dict | None = None) -> Response:
-        return self.client.safe_request("DELETE", self.url(path_params), params=query_params)
+    async def post_async(self, **kwargs) -> Response:
+        return await self.request_async("POST", **kwargs)
+
+    def put(self, **kwargs) -> Response:
+        return self.request("PUT", **kwargs)
+
+    async def put_async(self, **kwargs) -> Response:
+        return await self.request_async("PUT", **kwargs)
+
+    def patch(self, **kwargs) -> Response:
+        return self.request("PATCH", **kwargs)
+
+    async def patch_async(self, **kwargs) -> Response:
+        return await self.request_async("PATCH", **kwargs)
+
+    def delete(self, **kwargs) -> Response:
+        return self.request("DELETE", **kwargs)
+
+    async def delete_async(self, **kwargs) -> Response:
+        return await self.request_async("DELETE", **kwargs)
