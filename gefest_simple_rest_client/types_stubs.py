@@ -10,7 +10,6 @@ from httpx._transports.base import AsyncBaseTransport
 
 
 class ClientOptions(TypedDict, total=False):
-    auth: _types.Auth | None
     cookies: _types.CookieTypes | None
     verify: ssl.SSLContext | str | bool
     cert: _types.CertTypes | None
@@ -29,7 +28,6 @@ class ClientOptions(TypedDict, total=False):
 
 
 class RequestOptions(TypedDict, total=False):
-    auth: _types.Auth | _client.UseClientDefault | None
     params: _types.QueryParamTypes | None
     headers: dict[str, str] | None
     cookies: _types.CookieTypes | None
