@@ -5,6 +5,7 @@ import typing
 import httpx
 
 from ..endpoint.base import BaseEndpoint
+from ..types_stubs import ClientOptions, RequestOptions
 
 
 BaseEndpointT = typing.TypeVar("BaseEndpointT", bound=BaseEndpoint)
@@ -12,14 +13,15 @@ BaseEndpointT = typing.TypeVar("BaseEndpointT", bound=BaseEndpoint)
 
 class BaseClient(ABC, typing.Generic[BaseEndpointT]):  # noqa: WPS214
     endpoints: typing.Iterable[type[BaseEndpointT]] = []
+    default_headers: typing.ClassVar[dict[str, str]] = {}
 
-    def __init__(self, *, session_timeout=300):
+    def __init__(self, *, session_timeout: int = 300, client_options: ClientOptions | None = None):
         if not self.endpoints:
             msg = "`endpoints` must be defined in the client class"
             raise NotImplementedError(msg)
         self.session_timeout = session_timeout
-
-        self._sync_client = httpx.Client()
+        self.client_options = client_options
+        self._sync_client: httpx.Client | None = None
         self._async_client: httpx.AsyncClient | None = None
         self._last_session_access_time = time.time()
 
@@ -50,18 +52,20 @@ class BaseClient(ABC, typing.Generic[BaseEndpointT]):  # noqa: WPS214
     def base_url(self) -> str:
         raise NotImplementedError
 
-    @property
-    @abstractmethod
-    def headers(self) -> dict:
-        raise NotImplementedError
+    def make_headers(self, headers: dict[str, str], *, update_default: bool = True) -> dict[str, str]:
+        if update_default:
+            return {**self.default_headers, **headers}
+        return headers
 
-    def safe_request(self, method: str, url: str, **kwargs) -> httpx.Response:
-        return self._sync_client.request(method, url, **kwargs)
+    def safe_request(self, method: str, url: str, **kwargs: RequestOptions) -> httpx.Response:
+        client = self._get_sync_client()
+        return client.request(method, url, **kwargs)
 
     def close_sync_client(self):
-        self._sync_client.close()
+        if self._sync_client is not None:
+            self._sync_client.close()
 
-    async def safe_request_async(self, method: str, url: str, **kwargs) -> httpx.Response:
+    async def safe_request_async(self, method: str, url: str, **kwargs: RequestOptions) -> httpx.Response:
         client = await self._get_async_client()
         return await client.request(method, url, **kwargs)
 
@@ -69,6 +73,16 @@ class BaseClient(ABC, typing.Generic[BaseEndpointT]):  # noqa: WPS214
         if self._async_client:
             await self._async_client.aclose()
             self._async_client = None
+
+    def _get_sync_client(self) -> httpx.Client:
+        if not self._sync_client or (time.time() - self._last_session_access_time) > self.session_timeout:
+            self._sync_client = httpx.Client(**self.client_options)
+        self._last_session_access_time = time.time()
+        return self._sync_client
+
+    def _create_sync_client(self):
+        self.close_sync_client()
+        self._sync_client = httpx.Client(**self.client_options)
 
     async def _get_async_client(self) -> httpx.AsyncClient:
         if not self._async_client or (time.time() - self._last_session_access_time) > self.session_timeout:
@@ -78,7 +92,7 @@ class BaseClient(ABC, typing.Generic[BaseEndpointT]):  # noqa: WPS214
 
     async def _create_async_client(self):
         await self.close_async_client()
-        self._async_client = httpx.AsyncClient(headers=self.headers)
+        self._async_client = httpx.AsyncClient(headers=self.default_headers, timeout=self.session_timeout)
 
     def _initialize_endpoints(self):
         for endpoint_class in self.endpoints:
