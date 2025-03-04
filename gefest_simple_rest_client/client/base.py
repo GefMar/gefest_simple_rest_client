@@ -92,7 +92,7 @@ class BaseClient(ABC, typing.Generic[BaseEndpointT]):  # noqa: WPS214
 
     async def _create_async_client(self):
         await self.close_async_client()
-        self._async_client = httpx.AsyncClient(headers=self.default_headers, timeout=self.session_timeout)
+        self._async_client = httpx.AsyncClient(headers=self.default_headers, **self.client_options)
 
     def _initialize_endpoints(self):
         for endpoint_class in self.endpoints:
