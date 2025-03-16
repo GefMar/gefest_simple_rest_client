@@ -20,7 +20,7 @@ class BaseClient(ABC, typing.Generic[BaseEndpointT]):  # noqa: WPS214
             msg = "`endpoints` must be defined in the client class"
             raise NotImplementedError(msg)
         self.session_timeout = session_timeout
-        self.client_options = client_options
+        self.client_options = client_options or {}
         self._sync_client: httpx.Client | None = None
         self._async_client: httpx.AsyncClient | None = None
         self._last_session_access_time = time.time()
