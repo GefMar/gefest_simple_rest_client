@@ -14,7 +14,7 @@
 pip install gefest_simple_rest_client
 ```
 
-## Usage Example
+## Simple Usage Example
 ```python
 from gefest_simple_rest_client.client import BaseClient
 from gefest_simple_rest_client.endpoint import BaseEndpoint, PathTemplate
@@ -62,6 +62,88 @@ except Exception as e:
 Example error:
 ```
 PathParamsValidationError: Parameter 'id' must be of type int
+```
+
+## Authorization
+You can authorize requests in **three ways**: globally via headers, globally via `auth`, or per request.
+### 1. Global Authorization via `headers`
+You can define default authorization headers in the client.
+
+```python
+class MyClient(BaseClient):
+    base_url = "https://example.com"
+    default_headers = {
+        "Authorization": "Bearer YOUR_TOKEN",
+    }
+    endpoints = [MyEndpoint]
+
+client = MyClient()
+response = client.example.get(path_params={"id": 1})
+```
+Request headers:
+```pycon
+>>> response.request.headers
+Headers({
+    'host': 'example.com',
+    'user-agent': 'python-httpx/0.28.1',
+    'accept': '*/*',
+    'accept-encoding': 'gzip, deflate',
+    'connection': 'keep-alive',
+    'authorization': '[secure]',
+})
+
+>>> response.request.headers["authorization"]
+'Bearer YOUR_TOKEN'
+```
+
+### 2. Global Authorization via `auth` parameter
+You can pass an auth handler (e.g., tuple or httpx.Auth instance) when initializing the client:
+```python
+client = MyClient(client_options={"auth": ("username", "password")})
+response = client.example.get(path_params={"id": 1})
+```
+
+Request headers:
+```pycon
+>>> response.request.headers["authorization"]
+'Basic dXNlcm5hbWU6cGFzc3dvcmQ='
+```
+
+Or using a custom `Auth` class:
+```python
+from httpx import Auth, Request, Response
+
+class BearerAuth(Auth):
+    def __init__(self, token: str):
+        self.token = token
+
+    def auth_flow(self, request) -> typing.Generator[Request, Response, None]:
+        request.headers["Authorization"] = f"Bearer {self.token}"
+        yield request
+
+client = MyClient(client_options={"auth": BearerAuth("your_token")})
+response = client.example.get(path_params={"id": 1})
+```
+
+Request headers:
+```pycon
+>>> response.request.headers["authorization"]
+'Bearer your_token'
+```
+
+### 3. Per-request Authorization
+Even if a global authorization method is set, you can override it for a specific request using the auth argument:
+```python
+response = client.example.get(
+    path_params={"id": 1},
+    auth=("username", "password"),
+)
+```
+
+Request headers:
+```pycon
+>>> response.request.headers["authorization"]
+'Basic dXNlcm5hbWU6cGFzc3dvcmQ='
 ```
 
 ## Feedback
