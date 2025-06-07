@@ -18,14 +18,14 @@ repos:
       - id: requirements-txt-fixer
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.0
+    rev: v0.11.8
     hooks:
       - id: ruff-format
       - id: ruff
         args: [ --fix, --unsafe-fixes ]
 
   - repo: https://github.com/pycqa/flake8
-    rev: '7.1.2'
+    rev: '7.2.0'
     hooks:
       - id: flake8
         args: ["--config=pyproject.toml"]

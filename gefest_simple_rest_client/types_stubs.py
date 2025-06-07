@@ -25,6 +25,8 @@ class ClientOptions(TypedDict, total=False):
     transport: AsyncBaseTransport | None
     trust_env: bool
     default_encoding: str | Callable[[bytes], str]
+    auth: _types.AuthTypes | None
+    headers: dict[str, str] | None
 
 
 class RequestOptions(TypedDict, total=False):
@@ -50,3 +52,4 @@ class RequestOptions(TypedDict, total=False):
     files: _types.RequestFiles | None
     json: Any | None
     extensions: _types.RequestExtensions | None
+    auth: _types.AuthTypes | _client.UseClientDefault | None

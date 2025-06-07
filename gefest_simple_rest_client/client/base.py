@@ -34,6 +34,13 @@ class BaseClient(ABC, typing.Generic[BaseEndpointT]):  # noqa: WPS214
         msg = f"{self.__class__.__name__!r} has no attribute {item!r}"
         raise AttributeError(msg)
 
+    def __enter__(self) -> "BaseClient":
+        self._create_sync_client()
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.close_sync_client()
+
     async def __aenter__(self) -> "BaseClient":
         await self._create_async_client()
         return self
@@ -70,31 +77,35 @@ class BaseClient(ABC, typing.Generic[BaseEndpointT]):  # noqa: WPS214
         return await client.request(method, url, **kwargs)
 
     async def close_async_client(self):
-        if self._async_client:
+        if self._async_client is not None:
             await self._async_client.aclose()
             self._async_client = None
 
     def _get_sync_client(self) -> httpx.Client:
-        if not self._sync_client or (time.time() - self._last_session_access_time) > self.session_timeout:
-            self._sync_client = httpx.Client(**self.client_options)
+        if self._sync_client is None or (time.time() - self._last_session_access_time) > self.session_timeout:
+            self._create_sync_client()
         self._last_session_access_time = time.time()
         return self._sync_client
 
     def _create_sync_client(self):
         self.close_sync_client()
-        self._sync_client = httpx.Client(headers=self.make_headers(self.default_headers), **self.client_options)
+        self._sync_client = httpx.Client(**self._make_client_options())
 
     async def _get_async_client(self) -> httpx.AsyncClient:
-        if not self._async_client or (time.time() - self._last_session_access_time) > self.session_timeout:
+        if self._async_client is None or (time.time() - self._last_session_access_time) > self.session_timeout:
             await self._create_async_client()
         self._last_session_access_time = time.time()
         return self._async_client
 
     async def _create_async_client(self):
         await self.close_async_client()
-        self._async_client = httpx.AsyncClient(headers=self.make_headers(self.default_headers), **self.client_options)
+        self._async_client = httpx.AsyncClient(**self._make_client_options())
 
     def _initialize_endpoints(self):
         for endpoint_class in self.endpoints:
             endpoint_instance = endpoint_class(self)
             setattr(self, endpoint_instance.name.lower(), endpoint_instance)
+
+    def _make_client_options(self) -> ClientOptions:
+        headers = self.client_options.get("headers")
+        return self.client_options | {"headers": self.make_headers(headers or {})}
